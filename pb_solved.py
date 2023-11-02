@@ -1,20 +1,34 @@
 import json
+import os
 
-file_path = "data/phonebook.json"
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+
+file_path = "data/phonebook.bin"
 
 
-def load_phone_book(file):
+def load_phone_book(file, key):
     try:
         with open(file, 'br') as h:
-            return json.loads(h.read())
+            data = h.read()
+        nonce, ct = data[:16], data[16:]
+
+        pt = AESGCM(key).decrypt(nonce, ct, None)
+
+        return json.loads(pt)
+
     except (FileNotFoundError, json.JSONDecodeError):
-        print(f"Could not load {file}, creating an empty phone book.")
-        return {}
+        print(f"Could not load {file}, creating an empty phone book")
+        phone_book = {}
+    return phone_book
 
 
-def save_phone_book(phone_book, file):
-    with open(file, 'wb') as h:
-        h.write(json.dumps(phone_book).encode("utf8"))
+def save_phone_book(phone_book, file, key):
+    pt = json.dumps(phone_book).encode("utf8")
+    nonce = os.urandom(16)
+    ct = AESGCM(key).encrypt(nonce, pt, None)
+
+    with open(file, 'wb') as file:
+        file.write(nonce + ct)
 
 
 def add_contact(phone_book, name, number):
@@ -34,7 +48,14 @@ def search_contact(phone_book, query):
 
 
 def main():
-    phone_book = load_phone_book(file_path)
+    try:
+        key = bytes.fromhex(input("Enter key as HEX: "))
+        assert len(key) == 16
+    except (ValueError, AssertionError):
+        print("Invalid key, aborting.")
+        return
+
+    phone_book = load_phone_book(file_path, key)
     print(f"Found {len(phone_book)} contacts.")
 
     while True:
@@ -54,7 +75,7 @@ def main():
                 name = input("Enter contact name to search: ")
                 search_contact(phone_book, name)
             case '3':
-                save_phone_book(phone_book, file_path)
+                save_phone_book(phone_book, file_path, key)
                 print("Phone book saved. Goodbye!")
                 break
             case _:
