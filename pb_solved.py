@@ -1,7 +1,7 @@
 import json
 import os
 
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 file_path = "data/phonebook.bin"
 
@@ -10,9 +10,10 @@ def load_phone_book(file, key):
     try:
         with open(file, 'br') as h:
             data = h.read()
-        nonce, ct = data[:16], data[16:]
+        iv, ct = data[:16], data[16:]
 
-        pt = AESGCM(key).decrypt(nonce, ct, None)
+        decryptor = Cipher(algorithms.AES(key), modes.CTR(iv)).decryptor()
+        pt = decryptor.update(ct) + decryptor.finalize()
 
         return json.loads(pt)
 
@@ -24,11 +25,13 @@ def load_phone_book(file, key):
 
 def save_phone_book(phone_book, file, key):
     pt = json.dumps(phone_book).encode("utf8")
-    nonce = os.urandom(16)
-    ct = AESGCM(key).encrypt(nonce, pt, None)
+    iv = os.urandom(16)
+
+    encryptor = Cipher(algorithms.AES(key), modes.CTR(iv)).encryptor()
+    ct = encryptor.update(pt) + encryptor.finalize()
 
     with open(file, 'wb') as file:
-        file.write(nonce + ct)
+        file.write(iv + ct)
 
 
 def add_contact(phone_book, name, number):
@@ -48,12 +51,14 @@ def search_contact(phone_book, query):
 
 
 def main():
-    try:
+    """try:
         key = bytes.fromhex(input("Enter key as HEX: "))
         assert len(key) == 16
     except (ValueError, AssertionError):
         print("Invalid key, aborting.")
-        return
+        return"""
+    
+    key = bytes.fromhex("4552a7202d04fb997f31c649d5533255")
 
     phone_book = load_phone_book(file_path, key)
     print(f"Found {len(phone_book)} contacts.")
