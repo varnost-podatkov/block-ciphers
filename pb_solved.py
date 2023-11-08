@@ -36,8 +36,7 @@ def load_phone_book(file, key):
 def save_phone_book(phone_book, file, key):
     # vsebino slovarja serializiramo kot objekt JSON
     pt = json.dumps(phone_book).encode("utf8")
-    # izberemo naključni IV
-    # IV spremenimo pri vsakem shranjevanju
+    # izberemo naključni IV in ta mora biti pri vsakem shranjevanju drugačen 
     iv = os.urandom(16)
 
     # pripravimo šifrirni algoritem
@@ -68,8 +67,8 @@ def search_contact(phone_book, query):
 
 
 def main():
-    # Pozor: Podana rešitev ni varna. V njej nalogi zgolj demonstriramo pravilno
-    # uporabo šifre AES-CTR z naključnim IV.
+    # Pozor: Podana rešitev ni varna. V njej zgolj demonstriramo pravilno uporabo
+    # šifre AES-CTR z naključnim IV.
     # 1. V praksi bi morala takšna aplikacija poleg tajnosti zagotoviti še celovitost,
     # saj lahko napadalec spremeni tajnopis in tega ne bomo zaznali: AES-CTR zagotavlja
     # zgolj tajnost, celovitosti ne.
