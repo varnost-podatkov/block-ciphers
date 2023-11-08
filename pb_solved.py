@@ -37,6 +37,7 @@ def save_phone_book(phone_book, file, key):
     # vsebino slovarja serializiramo kot objekt JSON
     pt = json.dumps(phone_book).encode("utf8")
     # izberemo naključni IV
+    # IV spremenimo pri vsakem shranjevanju
     iv = os.urandom(16)
 
     # pripravimo šifrirni algoritem
