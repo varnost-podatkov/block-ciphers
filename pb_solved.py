@@ -7,25 +7,27 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 file_path = "data/phonebook.bin"
 
 
-def load_phone_book(file, key):
+def load_phone_book(file: str, key: bytes) -> dict[str, str]:
     try:
-        # preberemo vsebino datoteke
+        # preberemo šifrirano datoteko
         with open(file, 'br') as h:
             data = h.read()
 
-        # vsebino ločimo v IV (prvih 16 bajtov) in tajnopis (preostali del)
+        # razčlenimo IV in čistopis
         iv, ct = data[:16], data[16:]
 
-        # pripravimo dešifrirani algoritem
-        dec = Cipher(algorithms.AES(key), modes.CTR(iv)).decryptor()
+        # pripravimo AES-CTR
+        cipher = Cipher(algorithms.AES(key), modes.CTR(iv)).decryptor()
+
         # dešifriramo
-        pt = dec.update(ct) + dec.finalize()
 
-        # čistopis (objekt JSON) pretvorimo v slovar
-        return json.loads(pt)
+        pt = cipher.update(ct) + cipher.finalize()
 
+        # bajte čistopisa dekodiramo po UTF-8
+        # in s JSON niz pretvorimo v pythonovski slovar
+        return json.loads(pt.decode("utf8"))
     except FileNotFoundError:
-        print(f"Could not load {file}, creating an empty phone book")
+        print(f"Could not load {file}, creating an empty phone book.")
         return {}
     except (UnicodeDecodeError, json.JSONDecodeError):
         # Smo dešifrirali, samo vsebina nima smisla
@@ -33,33 +35,35 @@ def load_phone_book(file, key):
         sys.exit(1)
 
 
-def save_phone_book(phone_book, file, key):
-    # vsebino slovarja serializiramo kot objekt JSON
-    pt = json.dumps(phone_book).encode("utf8")
-    # izberemo naključni IV in ta mora biti pri vsakem shranjevanju drugačen 
+def save_phone_book(phone_book: dict[str, str], file: str, key: bytes):
+    # ustvarimo naključni IV
     iv = os.urandom(16)
 
-    # pripravimo šifrirni algoritem
-    enc = Cipher(algorithms.AES(key), modes.CTR(iv)).encryptor()
+    # slovar zapišemo v format JSON in ga postrojimo z UTF-8
+    pt = json.dumps(phone_book).encode("utf8")
 
-    # šifriramo
-    ct = enc.update(pt) + enc.finalize()
+    # instanciramo AES-CTR
+    cipher = Cipher(algorithms.AES(key), modes.CTR(iv)).encryptor()
 
-    # v datoteko shranimo IV || CT
-    with open(file, 'wb') as file:
-        file.write(iv + ct)
+    # šifriramo čistopis
+    ct = cipher.update(pt) + cipher.finalize()
+
+    # shranimo IV in čistopis
+    with open(file, 'wb') as h:
+        h.write(iv)
+        h.write(ct)
 
 
-def add_contact(phone_book, name, number):
+def add_contact(phone_book: dict[str, str], name: str, number: str):
     phone_book[name] = number
     print(f'Contact {name} added with number {number}.')
 
 
-def search_contact(phone_book, query):
+def search_contact(phone_book: dict[str, str], query: str):
     hits = [(name, number) for name, number in phone_book.items() if name.find(query) != -1]
 
     if hits:
-        print(f"Found {len(hits)} hits:")
+        print(f"Found {len(hits)} hits: ")
         for name, number in hits:
             print(f"- {name}: {number}")
     else:
@@ -77,25 +81,21 @@ def main():
     # a je pri tem treba biti pazljiv: to je tema, ki jo bomo še obravnavali.
     # Alternativa bi bila tudi npr. spodnja koda, a to zahteva od uporabnika da pri vsakem
     # zagonu vpiše 32 znakov dolg ključ, kar je nepraktično.
+
     """try:
         key = bytes.fromhex(input("Enter key as HEX: "))
         assert len(key) == 16
     except (ValueError, AssertionError):
         print("Invalid key, aborting.")
         return"""
-    
     key = bytes.fromhex("4552a7202d04fb997f31c649d5533255")
-
     phone_book = load_phone_book(file_path, key)
+
     print(f"Found {len(phone_book)} contacts.")
 
     while True:
-        print("\nPhone Book Menu:")
-        print("1. Add Contact")
-        print("2. Search Contact")
-        print("3. Exit")
-
-        choice = input("Enter your choice (1/2/3): ")
+        print()
+        choice = input("Phone Book Menu (1 - Add / 2 - Search / 3 - Exit): ")
 
         match choice:
             case '1':

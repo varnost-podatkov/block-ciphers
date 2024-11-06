@@ -3,7 +3,7 @@ import json
 file_path = "data/phonebook.json"
 
 
-def load_phone_book(file):
+def load_phone_book(file: str) -> dict[str, str]:
     try:
         with open(file, 'br') as h:
             return json.loads(h.read())
@@ -12,21 +12,21 @@ def load_phone_book(file):
         return {}
 
 
-def save_phone_book(phone_book, file):
+def save_phone_book(phone_book: dict[str, str], file: str):
     with open(file, 'wb') as h:
         h.write(json.dumps(phone_book).encode("utf8"))
 
 
-def add_contact(phone_book, name, number):
+def add_contact(phone_book: dict[str, str], name: str, number: str):
     phone_book[name] = number
     print(f'Contact {name} added with number {number}.')
 
 
-def search_contact(phone_book, query):
+def search_contact(phone_book: dict[str, str], query: str):
     hits = [(name, number) for name, number in phone_book.items() if name.find(query) != -1]
 
     if hits:
-        print(f"Found {len(hits)} hits:")
+        print(f"Found {len(hits)} hits: ")
         for name, number in hits:
             print(f"- {name}: {number}")
     else:
@@ -35,15 +35,12 @@ def search_contact(phone_book, query):
 
 def main():
     phone_book = load_phone_book(file_path)
+
     print(f"Found {len(phone_book)} contacts.")
 
     while True:
-        print("\nPhone Book Menu:")
-        print("1. Add Contact")
-        print("2. Search Contact")
-        print("3. Exit")
-
-        choice = input("Enter your choice (1/2/3): ")
+        print()
+        choice = input("Phone Book Menu (1 - Add / 2 - Search / 3 - Exit): ")
 
         match choice:
             case '1':
