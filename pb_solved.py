@@ -9,49 +9,46 @@ file_path = "data/phonebook.bin"
 
 def load_phone_book(file: str, key: bytes) -> dict[str, str]:
     try:
-        # preberemo šifrirano datoteko
+        # preberemo vsebino datoteke
         with open(file, 'br') as h:
             data = h.read()
 
-        # razčlenimo IV in čistopis
+        # vsebino razdelimo na IV (prvih 16 bajtov) in tajnopis (preostali del)
         iv, ct = data[:16], data[16:]
 
-        # pripravimo AES-CTR
-        cipher = Cipher(algorithms.AES(key), modes.CTR(iv)).decryptor()
+        # pripravimo dešifrirni algoritem AES-CTR
+        decryptor = Cipher(algorithms.AES(key), modes.CTR(iv)).decryptor()
 
         # dešifriramo
+        pt = decryptor.update(ct) + decryptor.finalize()
 
-        pt = cipher.update(ct) + cipher.finalize()
-
-        # bajte čistopisa dekodiramo po UTF-8
-        # in s JSON niz pretvorimo v pythonovski slovar
+        # bajte čistopisa dekodiramo po UTF-8 in pretvorimo v slovar
         return json.loads(pt.decode("utf8"))
     except FileNotFoundError:
         print(f"Could not load {file}, creating an empty phone book.")
         return {}
     except (UnicodeDecodeError, json.JSONDecodeError):
-        # Smo dešifrirali, samo vsebina nima smisla
-        print(f"Could not load decrypted data into a dictionary, maybe key is incorrect, aborting.")
+        # Dešifriranje je uspelo, a vsebina nima smisla.
+        print("Could not load decrypted data into a dictionary, maybe key is incorrect, aborting.")
         sys.exit(1)
 
 
 def save_phone_book(phone_book: dict[str, str], file: str, key: bytes):
-    # ustvarimo naključni IV
-    iv = os.urandom(16)
-
-    # slovar zapišemo v format JSON in ga postrojimo z UTF-8
+    # slovar serializiramo kot JSON in kodiramo po UTF-8
     pt = json.dumps(phone_book).encode("utf8")
 
-    # instanciramo AES-CTR
-    cipher = Cipher(algorithms.AES(key), modes.CTR(iv)).encryptor()
+    # izberemo naključni IV; pri vsakem shranjevanju mora biti drugačen
+    iv = os.urandom(16)
+
+    # pripravimo šifrirni algoritem AES-CTR
+    encryptor = Cipher(algorithms.AES(key), modes.CTR(iv)).encryptor()
 
     # šifriramo čistopis
-    ct = cipher.update(pt) + cipher.finalize()
+    ct = encryptor.update(pt) + encryptor.finalize()
 
-    # shranimo IV in čistopis
+    # v datoteko shranimo IV || CT
     with open(file, 'wb') as h:
-        h.write(iv)
-        h.write(ct)
+        h.write(iv + ct)
 
 
 def add_contact(phone_book: dict[str, str], name: str, number: str):
@@ -63,7 +60,7 @@ def search_contact(phone_book: dict[str, str], query: str):
     hits = [(name, number) for name, number in phone_book.items() if name.find(query) != -1]
 
     if hits:
-        print(f"Found {len(hits)} hits: ")
+        print(f"Found {len(hits)} hits:")
         for name, number in hits:
             print(f"- {name}: {number}")
     else:
@@ -71,16 +68,19 @@ def search_contact(phone_book: dict[str, str], query: str):
 
 
 def main():
-    # Pozor: Podana rešitev ni varna. V njej zgolj demonstriramo pravilno uporabo
-    # šifre AES-CTR z naključnim IV.
+    # Pozor: Podana rešitev je ranljiva zoper aktivnega napadalca.
+    # V njej zgolj demonstriramo pravilno uporabo šifre AES-CTR z naključnim IV.
+    #
     # 1. V praksi bi morala takšna aplikacija poleg tajnosti zagotoviti še celovitost,
-    # saj lahko napadalec spremeni tajnopis in tega ne bomo zaznali: AES-CTR zagotavlja
-    # zgolj tajnost, celovitosti ne.
+    #    saj lahko napadalec spremeni tajnopis in tega ne bomo zaznali: AES-CTR zagotavlja
+    #    zg olj tajnost, celovitosti ne.
+    #
     # 2. Ključ smo za lažje poganjanje/testiranje kar statično zapisali v programsko
-    # kodo. Veliko boljše bi bilo ključ npr. izpeljati iz gesla, ki ga vpiše uporabnik,
-    # a je pri tem treba biti pazljiv: to je tema, ki jo bomo še obravnavali.
-    # Alternativa bi bila tudi npr. spodnja koda, a to zahteva od uporabnika da pri vsakem
-    # zagonu vpiše 32 znakov dolg ključ, kar je nepraktično.
+    #    kodo. Veliko boljše bi bilo ključ npr. izpeljati iz gesla, ki ga vpiše uporabnik,
+    #    a je pri tem treba biti pazljiv: to je tema, ki jo bomo še obravnavali.
+    #
+    #    Alternativa bi bila tudi npr. spodnja koda, a to zahteva od uporabnika da pri vsakem
+    #    zagonu vpiše 32 znakov dolg ključ, kar je nepraktično.
 
     """try:
         key = bytes.fromhex(input("Enter key as HEX: "))
@@ -88,14 +88,19 @@ def main():
     except (ValueError, AssertionError):
         print("Invalid key, aborting.")
         return"""
-    key = bytes.fromhex("4552a7202d04fb997f31c649d5533255")
-    phone_book = load_phone_book(file_path, key)
 
+    key = bytes.fromhex("4552a7202d04fb997f31c649d5533255")
+
+    phone_book = load_phone_book(file_path, key)
     print(f"Found {len(phone_book)} contacts.")
 
     while True:
-        print()
-        choice = input("Phone Book Menu (1 - Add / 2 - Search / 3 - Exit): ")
+        print("\nPhone Book Menu:")
+        print("1. Add Contact")
+        print("2. Search Contact")
+        print("3. Exit")
+
+        choice = input("Enter your choice (1/2/3): ")
 
         match choice:
             case '1':
