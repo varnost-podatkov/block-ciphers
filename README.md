@@ -3,12 +3,13 @@
 Laboratorijska vaja pri predmetu Varnost podatkov je namenjena sprotnemu
 tedenskemu delu in učenju. Spoznali boste kriptografsko varne generatorje
 naključnih vrednosti, uporabo knjižnice `cryptography`, načina AES-CTR in
-AES-CBC ter gnetljivost tajnopisa.
+AES-CBC, gnetljivost tajnopisa ter v nalogi 5 še napad na šifriran seznam ocen.
+Za izris javnega frekvenčnega diagrama v nalogi 5 potrebujete tudi `matplotlib`.
 
 ## Priprava okolja
 
 Potrebujete sodobni Python (priporočeno 3.12 ali novejši) in pakete
-`cryptography` ter `jupyterlab`. Namestite jih z:
+`cryptography`, `jupyterlab` ter `matplotlib`. Namestite jih z:
 
 ```sh
 pip install -r requirements.txt
