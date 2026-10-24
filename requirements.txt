@@ -1,4 +1,2 @@
 cryptography
 jupyterlab
-matplotlib
-nbgrader
