@@ -73,7 +73,7 @@ def main():
     #
     # 1. V praksi bi morala takšna aplikacija poleg tajnosti zagotoviti še celovitost,
     #    saj lahko napadalec spremeni tajnopis in tega ne bomo zaznali: AES-CTR zagotavlja
-    #    zg olj tajnost, celovitosti ne.
+    #    zgolj tajnost, celovitosti ne.
     #
     # 2. Ključ smo za lažje poganjanje/testiranje kar statično zapisali v programsko
     #    kodo. Veliko boljše bi bilo ključ npr. izpeljati iz gesla, ki ga vpiše uporabnik,
