@@ -34,9 +34,6 @@
             if [ -f requirements.txt ]; then
               ${pkgs.uv}/bin/uv pip install -r requirements.txt
             fi
-
-            # to zsh
-            exec zsh
           '';
         };
       });

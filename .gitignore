@@ -62,3 +62,4 @@ phonebook.*
 
 # Local grading artifacts
 /grading-runs/
+.direnv/
